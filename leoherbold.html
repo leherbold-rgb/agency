@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leo Herbold &mdash; Digital Agency</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <style>
+    :root {
+      --parchment: #F0E8D8;
+      --parchment-dark: #E4D9C3;
+      --ember: #FF3C00;
+      --ember-dim: rgba(255,60,0,0.12);
+      --ember-faint: rgba(255,60,0,0.05);
+      --ink: #1C1410;
+      --ink-mid: #4A3F37;
+      --ink-light: rgba(28,20,16,0.38);
+      --display: 'Cormorant Garamond', Georgia, serif;
+      --sans: 'Outfit', sans-serif;
+      --mono: 'DM Mono', monospace;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; cursor:none; }
+    html { scroll-behavior:smooth; font-size:16px; }
+    body {
+      background: var(--parchment);
+      color: var(--ink);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+
+    /* GRAIN */
+    body::before {
+      content:'';
+      position:fixed; inset:0;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events:none; z-index:9000; opacity:0.6;
+    }
+
+    /* CURSOR */
+    .cursor-svg {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(0, 0);
+      width: 28px;
+      height: 28px;
+      /* offset so tip of pointer is at actual mouse position */
+      margin-left: -2px;
+      margin-top: -2px;
+    }
+
+    /* HEADER */
+    header {
+      padding:1.5rem 2.5rem;
+      display:grid; grid-template-columns:auto 1fr auto;
+      align-items:center;
+      position:sticky; top:0; z-index:100;
+      background:var(--parchment);
+      border-bottom:1px solid transparent;
+      transition: background-color 0.6s ease, border-color 0.4s, color 0.6s ease;
+    }
+    header.scrolled { border-bottom-color:rgba(28,20,16,0.1); }
+    .header-left { display:flex; align-items:center; gap:10px; }
+    .logo-mark {
+      width:22px; height:22px;
+      border:1.5px solid var(--ember); border-radius:50%;
+      display:grid; place-items:center;
+      font-family:var(--mono); font-size:7px; font-weight:500;
+      color:var(--ember);
+    }
+    .logo-name {
+      font-family:var(--sans); font-size:0.62rem; font-weight:500;
+      text-transform:uppercase; letter-spacing:0.1em; color:var(--ink);
+    }
+    nav { display:flex; justify-content:center; gap:3rem; }
+    nav a {
+      text-decoration:none; font-size:0.6rem; font-weight:500;
+      text-transform:uppercase; letter-spacing:0.09em;
+      color:var(--ink-mid); transition:color .3s; position:relative;
+    }
+    nav a::after {
+      content:''; position:absolute; bottom:-4px; left:0;
+      width:100%; height:1px; background:var(--ember);
+      transform:scaleX(0); transform-origin:right;
+      transition:transform .4s cubic-bezier(.25,1,.5,1);
+    }
+    nav a:hover { color:var(--ink); }
+    nav a:hover::after { transform:scaleX(1); transform-origin:left; }
+    .header-right { display:flex; align-items:center; gap:2rem; }
+    .header-meta { font-family:var(--mono); font-size:0.58rem; color:var(--ink-light); letter-spacing:0.02em; }
+    .header-meta strong { color:var(--ink-mid); font-weight:500; }
+    .availability-badge {
+      display:flex; align-items:center; gap:8px;
+      border:1px solid var(--ember-dim); padding:0.5rem 0.9rem;
+      font-family:var(--mono); font-size:0.55rem; letter-spacing:0.04em;
+      color:var(--ink-mid); transition:background .3s, border-color .3s;
+    }
+    .availability-badge:hover { background:var(--ember-faint); border-color:rgba(255,60,0,.25); }
+    .avail-pulse {
+      width:7px; height:7px; background:var(--ember); border-radius:50%;
+      animation:pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100%{opacity:1;transform:scale(1);}
+      50%{opacity:0.4;transform:scale(0.7);}
+    }
+
+    /* ── HERO SCROLL SCENE ── */
+    .hero-scroll-scene {
+      height: 120vh;
+      position: relative;
+    }
+
+    .hero {
+      position: sticky;
+      top: 0;
+      height: calc(100vh - 56px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding-top: 0.5rem;
+    }
+
+    .hero-mask {
+      flex-shrink: 0;
+      overflow: visible;
+    }
+
+    .hero-name {
+      font-family: 'Bodoni Moda', Georgia, serif;
+      font-weight: 400;
+      font-size: clamp(9rem, 19.6vw, 24rem);
+      line-height: 1;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      display: block;
+      white-space: nowrap;
+      padding: 0 0.2rem;
+      font-variation-settings: 'opsz' 96;
+      transform: scaleY(1.65);
+      transform-origin: top left;
+      will-change: transform;
+    }
+
+    /* Overlay sits over the white space, pinned to bottom of hero */
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .hero-overlay-row {
+      position: absolute;
+      left: 2.5rem;
+      right: 2.5rem;
+      top: calc(1em * 1.38 + 1.2rem); /* just below the compressed name */
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .hero-tagline {
+      font-family: var(--display);
+      font-size: clamp(1.1rem, 1.8vw, 1.7rem);
+      font-weight: 300;
+      font-style: italic;
+      color: var(--ink);
+      line-height: 1.3;
+      max-width: 36ch;
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity .8s .3s ease, transform .8s .3s ease;
+    }
+    .hero-tagline.visible { opacity:1; transform:translateY(0); }
+
+    .hero-scroll-hint {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      transition: opacity .8s .5s ease;
+      flex-shrink: 0;
+    }
+    .hero-scroll-hint.visible { opacity: 1; }
+    .scroll-hint-label {
+      font-family: var(--mono);
+      font-size: 0.52rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--ink-light);
+    }
+    .scroll-hint-line {
+      width: 1px; height: 40px;
+      background: var(--ember);
+      transform-origin: top;
+      animation: scrollLine 1.8s ease-in-out infinite;
+    }
+    @keyframes scrollLine {
+      0%   { transform:scaleY(0); opacity:1; }
+      60%  { transform:scaleY(1); opacity:1; }
+      100% { transform:scaleY(1); opacity:0; }
+    }
+
+    /* Photos */
+    .hero-photos {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      z-index: 2;
+      opacity: 0;
+      transform: translateY(60px);
+    }
+    .hero-photo { overflow:hidden; position:relative; background:var(--parchment-dark); }
+    .hero-photo img {
+      width:100%; height:100%; object-fit:cover; object-position:center top; display:block;
+      transition:transform .8s cubic-bezier(.25,1,.5,1);
+    }
+    .hero-photo:hover img { transform:scale(1.04); }
+    .hero-photo-placeholder {
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      flex-direction:column; gap:0.5rem;
+      background:var(--parchment-dark); color:var(--ink-light);
+    }
+    .hero-photo-placeholder .ph-label {
+      font-family:var(--mono); font-size:0.58rem;
+      text-transform:uppercase; letter-spacing:0.1em;
+    }
+    .hero-photo-placeholder .ph-sub {
+      font-family:var(--mono); font-size:0.52rem; letter-spacing:0.06em; opacity:0.5;
+    }
+
+    /* STATS BAR */
+    .stats-bar {
+      display:grid; grid-template-columns:repeat(4,1fr);
+      border-top:1px solid rgba(28,20,16,0.1);
+      border-bottom:1px solid rgba(28,20,16,0.1);
+    }
+    .stat-item { padding:2.5rem; border-right:1px solid rgba(28,20,16,0.1); }
+    .stat-item:last-child { border-right:none; }
+    .stat-number {
+      font-family:var(--display); font-size:clamp(2.5rem,4vw,4rem);
+      font-weight:300; line-height:1; color:var(--ink); letter-spacing:-0.02em;
+    }
+    .stat-number em { font-style:italic; color:var(--ember); }
+    .stat-label {
+      font-family:var(--mono); font-size:0.58rem;
+      text-transform:uppercase; letter-spacing:0.08em;
+      color:var(--ink-light); margin-top:0.6rem;
+    }
+
+    /* ABOUT */
+    .about-section {
+      padding:14vh 2.5rem 14vh;
+      display:grid; grid-template-columns:1fr 1fr; gap:6rem; align-items:start;
+    }
+    .about-left { position:sticky; top:8rem; }
+    .section-label {
+      font-family:var(--mono); font-size:0.58rem; text-transform:uppercase;
+      letter-spacing:0.1em; color:var(--ink-light); margin-bottom:2.5rem;
+      display:flex; align-items:center; gap:12px;
+    }
+    .section-label::before { content:''; width:24px; height:1px; background:var(--ember); }
+    .about-headline {
+      font-family:var(--display); font-size:clamp(2.5rem,4vw,4.5rem);
+      font-weight:300; line-height:1.12; letter-spacing:-0.02em; color:var(--ink);
+    }
+    .about-headline em { font-style:italic; color:var(--ember); }
+    .about-body {
+      font-size:clamp(.95rem,1.1vw,1.1rem); line-height:1.72;
+      color:var(--ink-mid); font-weight:300; max-width:56ch;
+    }
+    .about-body + .about-body { margin-top:1.4em; }
+    .about-services { margin-top:3.5rem; }
+    .service-row {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:1rem 0; border-bottom:1px solid rgba(28,20,16,0.08);
+    }
+    .service-row:first-child { border-top:1px solid rgba(28,20,16,0.08); }
+    .service-name { font-size:0.85rem; font-weight:400; color:var(--ink); }
+    .service-arrow { font-size:0.7rem; color:var(--ember); transition:transform .3s; }
+    .service-row:hover .service-arrow { transform:translateX(4px); }
+
+    /* MARQUEE */
+    .marquee-section {
+      overflow:hidden;
+      border-top:1px solid rgba(28,20,16,0.1);
+      border-bottom:1px solid rgba(28,20,16,0.1);
+      padding:1.8rem 0;
+    }
+    .marquee-track {
+      display:flex; align-items:center; width:max-content;
+      animation:marquee 28s linear infinite;
+    }
+    @keyframes marquee { from{transform:translateX(0);} to{transform:translateX(-50%);} }
+    .marquee-item {
+      font-family:var(--display); font-size:clamp(3rem,5vw,5.5rem);
+      font-weight:300; text-transform:uppercase; letter-spacing:-0.02em;
+      white-space:nowrap; color:rgba(28,20,16,0.12); padding:0 2.5rem;
+    }
+    .marquee-item.active { color:var(--ember); font-style:italic; }
+    .marquee-sep {
+      width:6px; height:6px; border-radius:50%;
+      background:var(--ember); opacity:0.3; margin:0 1rem; flex-shrink:0;
+    }
+
+    /* WORK */
+    .work-section { padding:0 2.5rem 8vh; }
+    .work-header {
+      display:flex; justify-content:space-between; align-items:baseline;
+      padding:3rem 0; border-bottom:1px solid rgba(28,20,16,0.1); margin-bottom:5rem;
+    }
+    .work-headline {
+      font-family:var(--display); font-size:clamp(2rem,3.5vw,3.5rem);
+      font-weight:300; letter-spacing:-0.02em;
+    }
+    .work-count-label {
+      font-family:var(--mono); font-size:0.58rem;
+      color:var(--ink-light); letter-spacing:0.08em; text-transform:uppercase;
+    }
+    .project {
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:0; margin-bottom:10rem; align-items:end;
+    }
+    .project:nth-child(even) .project-img-wrap { order:2; }
+    .project:nth-child(even) .project-meta { order:1; padding-right:6rem; padding-left:0; }
+    .project-img-wrap { position:relative; overflow:hidden; aspect-ratio:4/3; }
+    .project-img-wrap::after {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(to top,rgba(28,20,16,.25) 0%,transparent 50%);
+      pointer-events:none;
+    }
+    .project-img-wrap img {
+      width:100%; height:100%; object-fit:cover;
+      transform:scale(1.05); transition:transform .9s cubic-bezier(.25,1,.5,1);
+    }
+    .project-img-wrap:hover img { transform:scale(1); }
+    .project-number {
+      position:absolute; top:1.5rem; left:1.5rem;
+      font-family:var(--mono); font-size:0.6rem;
+      color:rgba(240,232,216,0.7); letter-spacing:0.04em; z-index:1;
+    }
+    .project-meta {
+      padding-left:5rem; display:flex; flex-direction:column;
+      justify-content:flex-end; padding-bottom:1.5rem;
+    }
+    .project-category {
+      font-family:var(--mono); font-size:0.58rem;
+      text-transform:uppercase; letter-spacing:0.09em;
+      color:var(--ember); margin-bottom:1.2rem;
+    }
+    .project-name {
+      font-family:var(--display); font-size:clamp(2.5rem,4vw,4.8rem);
+      font-weight:300; line-height:1.0; letter-spacing:-0.02em; color:var(--ink);
+    }
+    .project-description {
+      margin-top:1.4rem; font-size:0.82rem; line-height:1.7;
+      color:var(--ink-mid); max-width:38ch; font-weight:300;
+    }
+    .project-link {
+      display:inline-flex; align-items:center; gap:8px; margin-top:2rem;
+      font-family:var(--mono); font-size:0.6rem; text-transform:uppercase;
+      letter-spacing:0.08em; color:var(--ember); text-decoration:none;
+      transition:gap .3s;
+    }
+    .project-link:hover { gap:14px; }
+    .project-link::after { content:'→'; font-size:0.75rem; }
+
+    /* PHILOSOPHY */
+    .philosophy-section {
+      background:var(--ink); padding:14vh 2.5rem;
+      overflow:hidden; position:relative;
+    }
+    .philosophy-section::before {
+      content:'CRAFT'; position:absolute;
+      font-family:var(--display); font-size:28vw; font-weight:300;
+      color:rgba(240,232,216,.03); letter-spacing:-0.04em;
+      right:-2vw; top:50%; transform:translateY(-50%);
+      pointer-events:none; line-height:1;
+    }
+    .philosophy-grid {
+      display:grid; grid-template-columns:1fr 2fr; gap:8rem; align-items:center;
+    }
+    .philosophy-label {
+      font-family:var(--mono); font-size:0.58rem; text-transform:uppercase;
+      letter-spacing:0.1em; color:rgba(240,232,216,.35); margin-bottom:2rem;
+      display:flex; align-items:center; gap:12px;
+    }
+    .philosophy-label::before { content:''; width:24px; height:1px; background:var(--ember); }
+    .philosophy-quote {
+      font-family:var(--display); font-size:clamp(2rem,3.5vw,4rem);
+      font-weight:300; font-style:italic; line-height:1.18;
+      letter-spacing:-0.02em; color:var(--parchment);
+    }
+    .philosophy-pillars { display:flex; flex-direction:column; }
+    .pillar {
+      padding:2rem 0; border-bottom:1px solid rgba(240,232,216,.08);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .pillar:first-child { border-top:1px solid rgba(240,232,216,.08); }
+    .pillar-name {
+      font-size:0.85rem; font-weight:400; color:rgba(240,232,216,.7);
+      transition:color .3s;
+    }
+    .pillar:hover .pillar-name { color:var(--parchment); }
+    .pillar-index { font-family:var(--mono); font-size:0.6rem; color:rgba(240,232,216,.25); }
+
+    /* CAROUSEL */
+    .carousel-section { padding:8vh 0; overflow:hidden; }
+    .carousel-header {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:0 2.5rem 2.5rem;
+    }
+    .carousel-headline {
+      font-family:var(--display); font-size:clamp(1.5rem,2.5vw,2.5rem);
+      font-weight:300; letter-spacing:-0.01em;
+    }
+    .carousel-controls { display:flex; gap:0.5rem; }
+    .carousel-btn {
+      width:44px; height:44px; border:1px solid rgba(28,20,16,.15);
+      background:transparent; display:grid; place-items:center;
+      font-size:1rem; color:var(--ink); border-radius:50%; cursor:none;
+      transition:background .25s, border-color .25s, color .25s;
+    }
+    .carousel-btn:hover { background:var(--ember); border-color:var(--ember); color:white; }
+    .carousel-track-wrap { overflow:hidden; padding:0 2.5rem; }
+    .carousel-track { display:flex; gap:1.5rem; width:max-content; }
+    .carousel-item { width:380px; flex-shrink:0; }
+    .carousel-item-img { height:280px; overflow:hidden; }
+    .carousel-item-img img {
+      width:100%; height:100%; object-fit:cover;
+      transform:scale(1.05); transition:transform .6s cubic-bezier(.25,1,.5,1);
+    }
+    .carousel-item:hover .carousel-item-img img { transform:scale(1); }
+    .carousel-item-info {
+      padding-top:1.2rem; display:flex;
+      justify-content:space-between; align-items:baseline;
+    }
+    .carousel-item-name { font-size:0.9rem; font-weight:400; color:var(--ink); }
+    .carousel-item-type {
+      font-family:var(--mono); font-size:0.58rem;
+      color:var(--ink-light); letter-spacing:0.05em; text-transform:uppercase;
+    }
+
+    /* CONTACT */
+    .contact-section {
+      padding:14vh 2.5rem; display:grid; grid-template-columns:1fr 1fr;
+      gap:8rem; align-items:center; border-top:1px solid rgba(28,20,16,.1);
+    }
+    .contact-headline {
+      font-family:var(--display); font-size:clamp(3rem,6vw,7rem);
+      font-weight:300; line-height:0.92; letter-spacing:-0.03em; color:var(--ink);
+    }
+    .contact-headline em { font-style:italic; color:var(--ember); }
+    .contact-intro {
+      font-size:0.9rem; line-height:1.7; color:var(--ink-mid);
+      max-width:44ch; font-weight:300; margin-bottom:3rem;
+    }
+    .contact-cta {
+      display:inline-flex; align-items:center; gap:14px;
+      background:var(--ember); color:white; padding:1.1rem 2.2rem;
+      font-family:var(--mono); font-size:0.65rem; text-transform:uppercase;
+      letter-spacing:0.1em; text-decoration:none; transition:background .25s, gap .3s;
+    }
+    .contact-cta:hover { background:var(--ink); gap:20px; }
+    .contact-cta::after { content:'→'; font-size:0.8rem; }
+    .contact-links { margin-top:3rem; display:flex; gap:2.5rem; }
+    .contact-link {
+      font-family:var(--mono); font-size:0.6rem; text-transform:uppercase;
+      letter-spacing:0.08em; color:var(--ink-light); text-decoration:none;
+      transition:color .25s; position:relative;
+    }
+    .contact-link::after {
+      content:''; position:absolute; bottom:-3px; left:0;
+      width:100%; height:1px; background:var(--ink-light); transition:background .25s;
+    }
+    .contact-link:hover { color:var(--ember); }
+    .contact-link:hover::after { background:var(--ember); }
+
+    /* FOOTER */
+    footer {
+      padding:1.8rem 2.5rem; display:flex; justify-content:space-between;
+      align-items:center; border-top:1px solid rgba(28,20,16,.1);
+    }
+    .footer-left { font-family:var(--mono); font-size:0.58rem; color:var(--ink-light); letter-spacing:0.04em; }
+    .footer-center { font-family:var(--display); font-size:1.1rem; font-weight:300; font-style:italic; color:var(--ember); opacity:0.4; }
+    .footer-right { font-family:var(--mono); font-size:0.58rem; color:var(--ink-light); letter-spacing:0.04em; }
+
+    /* RESPONSIVE */
+    @media (max-width:900px) {
+      nav { display:none; }
+      .availability-badge { display:none; }
+      .project { grid-template-columns:1fr; }
+      .project:nth-child(even) .project-img-wrap { order:1; }
+      .project:nth-child(even) .project-meta { order:2; padding-right:0; padding-left:0; }
+      .project-meta { padding-left:0; padding-top:2rem; }
+      .about-section { grid-template-columns:1fr; gap:3rem; }
+      .about-left { position:static; }
+      .philosophy-grid { grid-template-columns:1fr; gap:3rem; }
+      .stats-bar { grid-template-columns:1fr 1fr; }
+      .stat-item { border-bottom:1px solid rgba(28,20,16,.1); }
+      .contact-section { grid-template-columns:1fr; gap:3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <svg class="cursor-svg" id="cursorSvg" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M4 2L4 20L8.5 15.5L11.5 23L14 22L11 14.5L17 14.5L4 2Z" fill="#FF3C00" stroke="#1C1410" stroke-width="1" stroke-linejoin="round"/>
+  </svg>
+
+  <header id="siteHeader">
+    <div class="header-left">
+      <div class="logo-mark">LH</div>
+      <span class="logo-name">Leo&thinsp;/&thinsp;Herbold</span>
+    </div>
+    <nav>
+      <a href="#work">Work</a>
+      <a href="#about">Approach</a>
+      <a href="#culture">Philosophy</a>
+      <a href="#contact">Start a project</a>
+    </nav>
+    <div class="header-right">
+      <div class="header-meta">
+        <strong id="clock">00:00:00</strong>&thinsp;&mdash;&thinsp;Boston
+      </div>
+      <div class="availability-badge">
+        <div class="avail-pulse"></div>
+        <span>We are hiring</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero-scroll-scene">
+    <section class="hero">
+      <div class="hero-mask">
+        <span class="hero-name" id="heroName">Leo Herbold</span>
+      </div>
+
+      <!-- Bottom overlay: tagline left, scroll hint right -->
+      <div class="hero-overlay" id="heroOverlay">
+        <div class="hero-overlay-row">
+          <p class="hero-tagline" id="heroTagline">
+            Craft-first digital agency&mdash;<br>where quality is the last to go.
+          </p>
+          <div class="hero-scroll-hint" id="heroScrollHint">
+            <span class="scroll-hint-label">Scroll</span>
+            <div class="scroll-hint-line"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-photos" id="heroPhotos">
+        <div class="hero-photo">
+          <img src="hero_photo_left.png" alt="Editorial portrait with grain and mosaic texture effect">
+        </div>
+        <div class="hero-photo">
+          <img src="hero_photo_right.png" alt="Aurum luxury wellness website displayed on iMac in design studio">
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-number">24<em>+</em></div>
+      <div class="stat-label">Projects delivered</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number"><em>&#8734;</em></div>
+      <div class="stat-label">Revisions until right</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">01<em>/</em>25</div>
+      <div class="stat-label">Founded</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">3<em>&times;</em></div>
+      <div class="stat-label">Disciplines</div>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <section class="about-section" id="about">
+    <div class="about-left">
+      <div class="section-label">Our approach</div>
+      <h2 class="about-headline">Where quality is never<br><em>the first to go.</em></h2>
+    </div>
+    <div class="about-right">
+      <p class="about-body">In January 2025 Leo Herbold came to life with a clear idea of how a modern design agency could be run. Gathering the best talent fuelled by high ambitions and projects run in a way where quality is the last thing to be sacrificed.</p>
+      <p class="about-body">We design online shops, corporate websites and brand identities with a strong root in the Scandinavian design philosophies&mdash;where functionality meets aesthetics and the whole becomes greater than the sum of its parts.</p>
+      <div class="about-services">
+        <div class="service-row"><span class="service-name">E-Commerce &amp; Online Shops</span><span class="service-arrow">&#8594;</span></div>
+        <div class="service-row"><span class="service-name">Corporate Websites</span><span class="service-arrow">&#8594;</span></div>
+        <div class="service-row"><span class="service-name">Brand Identity</span><span class="service-arrow">&#8594;</span></div>
+        <div class="service-row"><span class="service-name">Editorial &amp; Art Direction</span><span class="service-arrow">&#8594;</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MARQUEE -->
+  <div class="marquee-section">
+    <div class="marquee-track">
+      <span class="marquee-item active">Design</span><span class="marquee-sep"></span>
+      <span class="marquee-item">Strategy</span><span class="marquee-sep"></span>
+      <span class="marquee-item active">Digital</span><span class="marquee-sep"></span>
+      <span class="marquee-item">Identity</span><span class="marquee-sep"></span>
+      <span class="marquee-item active">Craft</span><span class="marquee-sep"></span>
+      <span class="marquee-item">Code</span><span class="marquee-sep"></span>
+      <span class="marquee-item active">Design</span><span class="marquee-sep"></span>
+      <span class="marquee-item">Strategy</span><span class="marquee-sep"></span>
+      <span class="marquee-item active">Digital</span><span class="marquee-sep"></span>
+      <span class="marquee-item">Identity</span><span class="marquee-sep"></span>
+      <span class="marquee-item active">Craft</span><span class="marquee-sep"></span>
+      <span class="marquee-item">Code</span><span class="marquee-sep"></span>
+    </div>
+  </div>
+
+  <!-- SELECTED WORK -->
+  <section class="work-section" id="work">
+    <div class="work-header">
+      <h2 class="work-headline">Selected work</h2>
+      <span class="work-count-label">04 Projects</span>
+    </div>
+    <div class="project gsap-project">
+      <div class="project-img-wrap">
+        <span class="project-number">01</span>
+        <img src="project_1.png" alt="Studio Luna">
+      </div>
+      <div class="project-meta">
+        <div class="project-category">Brand Identity &mdash; 2025</div>
+        <div class="project-name">Studio<br>Luna</div>
+        <p class="project-description">A minimalist identity for an architecture studio seeking presence in the luxury residential market.</p>
+        <a href="#" class="project-link">View project</a>
+      </div>
+    </div>
+    <div class="project gsap-project">
+      <div class="project-img-wrap">
+        <span class="project-number">02</span>
+        <img src="project_2.png" alt="Architectural Visions">
+      </div>
+      <div class="project-meta">
+        <div class="project-category">Corporate Website &mdash; 2024</div>
+        <div class="project-name">Architectural<br>Visions</div>
+        <p class="project-description">A comprehensive digital platform for an international architecture consultancy, built for clarity and precision.</p>
+        <a href="#" class="project-link">View project</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHILOSOPHY -->
+  <section class="philosophy-section" id="culture">
+    <div class="philosophy-grid">
+      <div>
+        <div class="philosophy-label">Our philosophy</div>
+        <blockquote class="philosophy-quote">&ldquo;Quality is a decision made before the first line of code.&rdquo;</blockquote>
+      </div>
+      <div class="philosophy-pillars">
+        <div class="pillar"><span class="pillar-name">Function before form&mdash;but never at the cost of beauty</span><span class="pillar-index">01</span></div>
+        <div class="pillar"><span class="pillar-name">Fewer things, done exceptionally well</span><span class="pillar-index">02</span></div>
+        <div class="pillar"><span class="pillar-name">Silence is not emptiness, it is space to breathe</span><span class="pillar-index">03</span></div>
+        <div class="pillar"><span class="pillar-name">Every pixel is a deliberate choice</span><span class="pillar-index">04</span></div>
+        <div class="pillar"><span class="pillar-name">Craft is visible only in its absence</span><span class="pillar-index">05</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CAROUSEL -->
+  <section class="carousel-section">
+    <div class="carousel-header">
+      <h3 class="carousel-headline">Digital experiences</h3>
+      <div class="carousel-controls">
+        <button class="carousel-btn" id="prevSlide">&#8592;</button>
+        <button class="carousel-btn" id="nextSlide">&#8594;</button>
+      </div>
+    </div>
+    <div class="carousel-track-wrap">
+      <div class="carousel-track" id="carouselTrack">
+        <div class="carousel-item"><div class="carousel-item-img"><img src="project_3.png" alt="Aurora Parfum"></div><div class="carousel-item-info"><span class="carousel-item-name">Aurora Parfum</span><span class="carousel-item-type">E-Commerce</span></div></div>
+        <div class="carousel-item"><div class="carousel-item-img"><img src="project_4.png" alt="Haven Interior"></div><div class="carousel-item-info"><span class="carousel-item-name">Haven Interior</span><span class="carousel-item-type">Brand Identity</span></div></div>
+        <div class="carousel-item"><div class="carousel-item-img"><img src="project_1.png" alt="Studio Luna"></div><div class="carousel-item-info"><span class="carousel-item-name">Studio Luna</span><span class="carousel-item-type">Web Design</span></div></div>
+        <div class="carousel-item"><div class="carousel-item-img"><img src="project_2.png" alt="Civic Structure"></div><div class="carousel-item-info"><span class="carousel-item-name">Civic Structure</span><span class="carousel-item-type">Editorial</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="contact-section" id="contact">
+    <div>
+      <h2 class="contact-headline">Let&rsquo;s build<br>something<br><em>remarkable.</em></h2>
+    </div>
+    <div class="contact-right">
+      <p class="contact-intro">We work with ambitious brands and studios who understand that great design is an investment&mdash;not an expense. Tell us about your project.</p>
+      <a href="mailto:hello@leoherbold.com" class="contact-cta">Start a conversation</a>
+      <div class="contact-links">
+        <a href="#" class="contact-link">LinkedIn</a>
+        <a href="#" class="contact-link">Instagram</a>
+        <a href="#" class="contact-link">Dribbble</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-left">&copy;&nbsp;2025 Leo Herbold &mdash; All rights reserved</div>
+    <div class="footer-center">Leo/Herbold</div>
+    <div class="footer-right">Boston, MA &mdash; EST</div>
+  </footer>
+
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Cursor
+    const cursorSvg = document.getElementById('cursorSvg');
+    let cx = -100, cy = -100;
+    document.addEventListener('mousemove', e => {
+      cx = e.clientX;
+      cy = e.clientY;
+      gsap.to(cursorSvg, { left: cx, top: cy, duration: 0.08, ease: 'none', position: 'fixed' });
+      cursorSvg.style.left = cx + 'px';
+      cursorSvg.style.top  = cy + 'px';
+    });
+    document.querySelectorAll('a, button, .project-img-wrap, .service-row, .pillar').forEach(el => {
+      el.addEventListener('mouseenter', () => gsap.to(cursorSvg, { scale: 1.3, duration: 0.25, ease: 'power2.out' }));
+      el.addEventListener('mouseleave', () => gsap.to(cursorSvg, { scale: 1,   duration: 0.25, ease: 'power2.out' }));
+    });
+
+    // Scroll velocity blur on hero name
+    let lastScroll = window.scrollY;
+    let blurRaf;
+    function updateBlur() {
+      const current = window.scrollY;
+      const velocity = Math.abs(current - lastScroll);
+      lastScroll = current;
+      const blur = Math.min(velocity * 0.12, 4);
+      document.getElementById('heroName').style.filter = `blur(${blur}px)`;
+      blurRaf = requestAnimationFrame(() => {
+        // Ease blur back to 0 when not scrolling
+        const el = document.getElementById('heroName');
+        const current = parseFloat(el.style.filter.replace('blur(','').replace('px)','')) || 0;
+        if (current > 0.1) {
+          el.style.filter = `blur(${current * 0.75}px)`;
+          blurRaf = requestAnimationFrame(arguments.callee);
+        } else {
+          el.style.filter = 'blur(0px)';
+        }
+      });
+    }
+    window.addEventListener('scroll', () => {
+      cancelAnimationFrame(blurRaf);
+      updateBlur();
+    }, { passive: true });
+    const clockEl = document.getElementById('clock');
+    function tick() { clockEl.textContent = new Date().toLocaleTimeString('en-US', { hour12: false }); }
+    setInterval(tick, 1000); tick();
+
+    // Header border on scroll
+    window.addEventListener('scroll', () => {
+      document.getElementById('siteHeader').classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // Position overlay row just below the hero name
+    function positionOverlay() {
+      const name = document.getElementById('heroName');
+      const row = document.querySelector('.hero-overlay-row');
+      const nameBottom = name.getBoundingClientRect().bottom - document.querySelector('.hero').getBoundingClientRect().top;
+      row.style.top = (nameBottom + 60) + 'px';
+    }
+    positionOverlay();
+    window.addEventListener('resize', positionOverlay);
+
+    gsap.set('header', { opacity: 0, y: -16 });
+    gsap.set('#heroName',   { scaleY: 1.65, transformOrigin: 'top left' });
+    gsap.set('#heroPhotos', { opacity: 0, y: 60 });
+
+    const intro = gsap.timeline({ defaults: { ease: 'expo.out' } });
+    intro.to('header', { opacity: 1, y: 0, duration: 1 }, 0.2);
+    intro.call(() => {
+      document.getElementById('heroTagline').classList.add('visible');
+      document.getElementById('heroScrollHint').classList.add('visible');
+    }, [], 0.7);
+
+    const heroTl = gsap.timeline({
+      scrollTrigger: {
+        trigger: '.hero-scroll-scene',
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: true,
+      }
+    });
+    heroTl
+      .to('#heroName',    { scaleY: 1, transformOrigin: 'top left', ease: 'none', duration: 1 }, 0)
+      .to('#heroOverlay', { opacity: 0, ease: 'none', duration: 0.3 }, 0)
+      .to('#heroPhotos',  { opacity: 1, y: 0, ease: 'none', duration: 0.5 }, 0.4)
+      .to('#siteHeader',  { backgroundColor: '#1C1410', color: '#F0E8D8', ease: 'none', duration: 0.5 }, 0.5)
+      .to('#siteHeader .logo-name, #siteHeader nav a, #siteHeader .header-meta', { color: '#F0E8D8', ease: 'none', duration: 0.5 }, 0.5)
+      .to('#siteHeader .logo-mark', { borderColor: '#F0E8D8', color: '#F0E8D8', ease: 'none', duration: 0.5 }, 0.5)
+      .to('#siteHeader .availability-badge', { borderColor: 'rgba(240,232,216,0.2)', color: '#F0E8D8', ease: 'none', duration: 0.5 }, 0.5)
+      .to('#siteHeader nav a', { color: 'rgba(240,232,216,0.7)', ease: 'none', duration: 0.5 }, 0.5);
+
+    // Stats
+    gsap.from('.stat-item', { opacity:0, y:30, duration:0.9, stagger:0.1, ease:'power3.out', scrollTrigger:{ trigger:'.stats-bar', start:'top 85%' } });
+
+    // About
+    gsap.from('.about-headline', { opacity:0, y:40, duration:1.2, ease:'power3.out', scrollTrigger:{ trigger:'.about-section', start:'top 80%' } });
+    gsap.from('.about-body',     { opacity:0, y:30, duration:1, stagger:0.15, ease:'power3.out', scrollTrigger:{ trigger:'.about-section', start:'top 70%' } });
+    gsap.from('.service-row',    { opacity:0, x:-20, duration:0.7, stagger:0.1, ease:'power3.out', scrollTrigger:{ trigger:'.about-services', start:'top 85%' } });
+
+    // Projects
+    document.querySelectorAll('.gsap-project').forEach(proj => {
+      const img  = proj.querySelector('.project-img-wrap img');
+      const meta = proj.querySelector('.project-meta');
+      gsap.fromTo(img, { clipPath:'inset(100% 0 0 0)', scale:1.12 }, { clipPath:'inset(0% 0 0 0)', scale:1.05, duration:1.6, ease:'power4.inOut', scrollTrigger:{ trigger:proj, start:'top 82%' } });
+      gsap.from(meta,  { opacity:0, y:50, duration:1.2, ease:'power3.out', scrollTrigger:{ trigger:proj, start:'top 70%' } });
+    });
+
+    // Philosophy
+    gsap.from('.philosophy-quote', { opacity:0, y:50, duration:1.4, ease:'power3.out', scrollTrigger:{ trigger:'.philosophy-section', start:'top 75%' } });
+    gsap.from('.pillar', { opacity:0, x:30, duration:0.8, stagger:0.1, ease:'power3.out', scrollTrigger:{ trigger:'.philosophy-pillars', start:'top 85%' } });
+
+    // Carousel
+    const track = document.getElementById('carouselTrack');
+    let scrollPos = 0;
+    document.getElementById('nextSlide').addEventListener('click', () => {
+      scrollPos = Math.min(scrollPos + 396, track.scrollWidth - window.innerWidth + 80);
+      gsap.to(track, { x: -scrollPos, duration: 0.9, ease: 'power3.out' });
+    });
+    document.getElementById('prevSlide').addEventListener('click', () => {
+      scrollPos = Math.max(scrollPos - 396, 0);
+      gsap.to(track, { x: -scrollPos, duration: 0.9, ease: 'power3.out' });
+    });
+    gsap.from('.carousel-item', { opacity:0, y:50, duration:0.9, stagger:0.12, ease:'power3.out', scrollTrigger:{ trigger:'.carousel-section', start:'top 85%' } });
+
+    // Contact
+    gsap.from('.contact-headline', { opacity:0, y:60, duration:1.4, ease:'power3.out', scrollTrigger:{ trigger:'.contact-section', start:'top 80%' } });
+    gsap.from('.contact-right > *', { opacity:0, y:30, duration:1, stagger:0.15, ease:'power3.out', scrollTrigger:{ trigger:'.contact-section', start:'top 75%' } });
+  </script>
+
+</body>
+</html>
